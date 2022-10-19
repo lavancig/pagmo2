@@ -312,11 +312,25 @@ population cmaes::evolve(population pop) const
             pop.get_problem().set_seed(std::uniform_int_distribution<unsigned>()(m_e));
         }
         // Reinsertion
-        for (decltype(lam) i = 0u; i < lam; ++i) {
-            for (decltype(dim) j = 0u; j < dim; ++j) {
-                dumb[j] = newpop[i](_(j));
+        if(m_bfe){
+            // Converts eigen array to vector of double array
+            vector<double*> newpop_vec;
+
+            for(int idx = 0; idx < lam; idx++){
+                newpop_vec[idx] = (double*)&newpop[idx];
             }
-            pop.set_x(i, dumb);
+
+            auto fitnesses = (*m_bfe)(prob, newpop_vec);
+            for (decltype(lam) i = 0u; i < lam; ++i) {
+                pop.set_xf(i, newpop_vec[i], fitnesses[i]);
+            }
+        }else{
+            for (decltype(lam) i = 0u; i < lam; ++i) {
+                for (decltype(dim) j = 0u; j < dim; ++j) {
+                    dumb[j] = newpop[i](_(j));
+                }
+                pop.set_x(i, dumb);
+            }
         }
         counteval += lam;
         // 4 - We extract the elite from this generation.
